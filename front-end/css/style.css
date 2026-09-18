@@ -62,7 +62,7 @@ table, tr, th, td, caption {
 }
 
 /* Deixa os campos que levam ao formulário parecendo texto */
-#lista-bases a, tfoot a {
+a {
     color: inherit;
     text-decoration: none;
 }
