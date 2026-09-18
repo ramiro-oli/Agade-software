@@ -15,6 +15,10 @@ extract($_POST);
 
 //chama a função que o js mandar
 switch ($acao) {
+    
+    case 'listarBases':
+        listarBases($conn);
+        break;
 
     case 'listarPackages':
         listarPackages();
@@ -34,6 +38,40 @@ switch ($acao) {
             "erro" => "Ação inválida."
         ]);
         break;
+}
+
+// função que vai listar as bases
+function listarBases($conn) {
+
+    // salva a consulta para encontrar as bases
+    $sql = "
+        SELECT
+            id_base,
+            nome
+        FROM agade_software.bases
+        ORDER BY nome
+    ";
+
+    // executa a consulta e guarda os resultados
+    $resultado = pg_query($conn, $sql);
+
+    // verifica se a consulta deu certo
+    if(!$resultado){
+        echo json_encode([
+            "erro" => "Erro ao buscar as bases.",
+            "detalhes" => pg_last_error($conn)
+        ]);
+        return;
+    }
+
+    // transforma os registros em uma array
+    $bases = pg_fetch_all($resultado);
+
+    // devolve para o js
+    echo json_encode([
+        "success" => true,
+        "bases" => $bases
+    ]);
 }
 
 // função que vai listar os packages
