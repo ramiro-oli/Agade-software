@@ -17,7 +17,7 @@ btn_listar.on("click", carregarPackages);
 // função que carrega os packages
 function carregarPackages() {
     // guarda a url digitada pelo usuário
-    const url = input_url.val();
+    url = input_url.val();
 
     if (!url) {
         alert("Por favor insira uma URL.");
@@ -30,7 +30,7 @@ function carregarPackages() {
     // envia requisição para o php
     $.post(
         // envia a ação a ser feita e a url digitada
-        "script.php",
+        "../../back-end/php/script.php",
         {
             acao: "listarPackages",
             url: url
@@ -100,6 +100,7 @@ function montarAccordion(package_ids, url) {
             if (ui.newHeader.length) {
                 const package_id =
                     ui.newHeader.data("id");
+                console.log("Package aberto:", package_id);
                 // chama a função que carrega os resources
                 carregarResources(
                     package_id,
@@ -121,7 +122,7 @@ function carregarResources(package_id, painel, url) {
     // envia a requisição para o php
     $.post(
         // envia a ação, a url e o id do package selecionado
-        "script.php",
+        "../../back-end/php/script.php",
         {
             acao: "packageShow",
             url: url,
@@ -310,7 +311,7 @@ $("#submit").on("click", function(event) {
 
     $.post(
         // envia para o php a ação que deve ser feita e os dados a serem utilizados
-        "script.php",
+        "../../back-end/php/script.php",
         {
             acao: "criarBasesFontes",
             dados: JSON.stringify(dados)
