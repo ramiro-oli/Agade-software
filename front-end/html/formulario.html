@@ -9,28 +9,28 @@
 <body>
     <h1 class="title"><a href="index.html">Agadê Bases</a></h1>
 
-    <form action="">
+    <form action="" id="formulario">
 
         <!--Formulário com os metadados p/ etl.bases-->
         <div class="container-form1">
 
             <label for="nome">nome:</label>
-            <input type="text" id="nome">
+            <input type="text" id="nome" required>
 
             <label for="descricao">descricao:</label>
-            <textarea id="descricao" rows="5" cols="30"></textarea>
+            <textarea id="descricao" rows="5" cols="30" required></textarea>
 
             <label for="tabela_destino">tabela_destino:</label>
-            <input type="text" id="tabela_destino">
+            <input type="text" id="tabela_destino" required>
 
             <label for="fonte">fonte:</label>
-            <input type="text" id="fonte">
+            <input type="text" id="fonte" required>
 
             <label for="fonte_link">fonte_link:</label>
-            <input type="url" id="fonte_link">
+            <input type="url" id="fonte_link" required>
 
             <label for="fonte_api">fonte_api:</label>
-            <input type="url" id="fonte_api">
+            <input type="url" id="fonte_api" required>
         </div>
 
         <!--Campo p/ chamar a API do CKAN-->
@@ -52,7 +52,7 @@
         </div>
 
         <!--Submeter o formulário e os resource's id selecionados-->
-        <input type="submit" id="submit" class="container-form1 btn" value="Criar bases e fontes">
+        <button type="submit" id="submit" class="container-form2">Criar bases e fontes</button>
     </form>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>

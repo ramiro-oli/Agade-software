@@ -254,36 +254,9 @@ input_busca_package.on("input", function() {
 });
 
 // ao clicar em criar bases e fontes:
-$("#submit").on("click", function(event) {
+$("#formulario").on("submit", function(event) {
     // envia os dados para o php sem recarregar a página
     event.preventDefault();
-
-    // salva os campos dos metadados da base
-    const campos = [
-        $("#nome"),
-        $("#descricao"),
-        $("#tabela_destino"),
-        $("#fonte"),
-        $("#fonte_link"),
-        $("#fonte_api")
-    ];
-
-    // define que o form está válido enquanto não houve a verificação
-    let valido = true;
-
-    // para cada campo do formulário, verifica se está preenchido
-    campos.forEach(function(campo) {
-        if (!campo.val()) {
-            campo.css("border", "2px solid red");
-            valido = false;
-        }
-    });
-
-    // impede o envio caso algum campo esteja vazio e mostra uma mensagem
-    if (!valido) {
-        alert("Preencha todos os campos obrigatórios.");
-        return;
-    }
 
     // valores digitados pelo usuário nos campos e lista vazia para guardar os dados dos resources selecionados
     const dados = {
@@ -336,11 +309,4 @@ $("#submit").on("click", function(event) {
         console.log("Erro ao enviar os dados");
         console.log(error);
     });
-});
-
-// remover borda vermelha após o usuário preencher o que não foi preenchido
-$("#nome, #descricao, #tabela_destino, #fonte, #fonte_api").on("input", function() {
-    if ($(this).val()) {
-        $(this).css("border", "");
-    }
 });
