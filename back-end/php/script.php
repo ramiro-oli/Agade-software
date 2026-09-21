@@ -20,6 +20,10 @@ switch ($acao) {
         listarBases($conn);
         break;
 
+    case 'buscarDados':
+        buscarDados($conn);
+        break;
+
     case 'listarPackages':
         listarPackages();
         break;
@@ -30,6 +34,10 @@ switch ($acao) {
 
     case 'criarBasesFontes':
         criarBasesFontes($conn);
+        break;
+
+    case 'atualizarBaseFontes':
+        atualizarBaseFontes($conn);
         break;
 
     // caso a ação seja inválida
@@ -71,6 +79,76 @@ function listarBases($conn) {
     echo json_encode([
         "success" => true,
         "bases" => $bases
+    ]);
+}
+
+// função que vai buscar os dados da base para preencher o formulário
+function buscarDados($conn) {
+    // guarda as variáveis do post dentro da função
+    extract($_POST);
+
+    // guarda a consulta a ser realizada para buscar os dados da base
+    $sql = "
+        SELECT
+            id_base,
+            nome,
+            descricao,
+            tabela_destino,
+            fonte,
+            fonte_link,
+            fonte_api
+        FROM agade_software.bases
+        WHERE id_base = $1
+    ";
+
+    // executa a consulta e salva o resultado
+    $resultado = pg_query_params($conn, $sql, [$id_base]);
+
+    // verifica se a consulta deu certo
+    if(!$resultado){
+        echo json_encode([
+            "erro" => "Erro ao buscar a base.",
+            "detalhes" => pg_last_error($conn)
+        ]);
+
+        return;
+    }
+
+    // transforma em array associativo
+    $base = pg_fetch_assoc($resultado);
+
+
+    // salva a consulta das fontes
+    $sql = "
+        SELECT
+            package_id,
+            resource_id
+        FROM agade_software.fontes
+        WHERE id_base = $1
+    ";
+
+    // executa e salva o resultado
+    $resultado_fontes = pg_query_params($conn, $sql, [$id_base]);
+
+    // verifica se deu certo
+    if(!$resultado_fontes){
+        echo json_encode([
+            "erro" => "Erro ao buscar as fontes.",
+            "detalhes" => pg_last_error($conn)
+        ]);
+
+        return;
+    }
+
+    // transforma em array tbm mas pega todas as linhas
+    $fontes = pg_fetch_all($resultado_fontes);
+
+
+    // devolve pro js
+    echo json_encode([
+        "success" => true,
+        "base" => $base,
+        "fontes" => $fontes
     ]);
 }
 
@@ -271,6 +349,198 @@ function criarBasesFontes($conn) {
     echo json_encode([
         "success" => true,
         "mensagem" => "Base e fontes inseridas com sucesso."
+    ]);
+}
+
+// função que atualiza a base e as fontes
+function atualizarBaseFontes($conn) {
+    //inicia transação
+    pg_query($conn, "BEGIN");
+
+    // extrai as variaveis do post
+    extract($_POST);
+
+    // verifica se tem os dados
+    if(empty($dados)){
+        echo json_encode([
+            "erro" => "Dados não enviados."
+        ]);
+
+        return;
+    }
+
+    // transforma json do js em array associativo
+    $dados = json_decode($dados, true);
+
+    // salva a consulta a ser feita
+    $sql = "
+        SELECT
+            package_id,
+            resource_id
+        FROM agade_software.fontes
+        WHERE id_base = $1
+    ";
+
+    // executa e salva o resultado
+    $resultado_fontes = pg_query_params($conn, $sql, [$id_base]);
+
+    // verifica se deu certo
+    if(!$resultado_fontes){
+        pg_query($conn, "ROLLBACK");
+        echo json_encode([
+            "erro" => "Erro ao buscar as fontes atuais.",
+            "detalhes" => pg_last_error($conn)
+        ]);
+
+        return;
+    }
+
+    // transforma em array
+    $fontes_atuais = pg_fetch_all($resultado_fontes);
+
+    // salva o insert
+    $sql_fonte = "
+        INSERT INTO agade_software.fontes
+        (resource_id, url, nome, ultima_atualizacao, package_id, delimitador, id_base)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+    ";
+
+    // executa o insert se algum resource marcado não estiver na base
+    foreach($dados['resources'] as $resource){
+        $existe = false;
+
+        foreach($fontes_atuais as $fonte){
+            if(
+                $fonte['package_id'] === $resource['package_id'] &&
+                $fonte['resource_id'] === $resource['resource_id']
+            ){
+                $existe = true;
+                break;
+            }
+        }
+
+        if(!$existe){
+            $resultado = pg_query_params($conn, $sql_fonte, [
+                $resource['resource_id'],
+                $resource['url'],
+                $resource['nome'],
+                $resource['ultima_atualizacao'],
+                $resource['package_id'],
+                $resource['delimitador'],
+                $id_base
+            ]);
+
+            if(!$resultado){
+                pg_query($conn, "ROLLBACK");
+
+                echo json_encode([
+                    "erro" => "Erro ao inserir a fonte.",
+                    "detalhes" => pg_last_error($conn)
+                ]);
+
+                return;
+            }
+        }
+    }
+
+    // salva o delete
+    $sql_delete = "
+        DELETE FROM agade_software.fontes
+        WHERE id_base = $1
+            AND package_id = $2
+            AND resource_id = $3
+    ";
+
+    // executa o delete se algum resource da base estiver desmarcado
+    foreach($fontes_atuais as $fonte){
+
+        $continua_selecionada = false;
+
+        foreach($dados['resources'] as $resource){
+            if(
+                $fonte['package_id'] == $resource['package_id'] &&
+                $fonte['resource_id'] == $resource['resource_id']
+            ){
+                $continua_selecionada = true;
+                break;
+            }
+        }
+
+        if(
+            !$continua_selecionada &&
+            in_array($fonte['package_id'], $dados['packages_abertos'])
+        ){
+            $resultado = pg_query_params($conn, $sql_delete, [
+                $id_base,
+                $fonte['package_id'],
+                $fonte['resource_id']
+            ]);
+
+            if(!$resultado){
+                pg_query($conn, "ROLLBACK");
+
+                echo json_encode([
+                    "erro" => "Erro ao excluir a fonte.",
+                    "detalhes" => pg_last_error($conn)
+                ]);
+
+                return;
+            }
+        }
+    }
+
+    // verifica se deu certo
+    if(!$dados){
+        echo json_encode([
+            "erro" => "Erro ao interpretar os dados."
+        ]);
+
+        return;
+    }
+
+    // salva o update da base
+    $sql = "
+        UPDATE agade_software.bases
+        SET
+            nome = $1,
+            descricao = $2,
+            tabela_destino = $3,
+            fonte = $4,
+            fonte_link = $5,
+            fonte_api = $6
+        WHERE id_base = $7
+    ";
+
+    // executa e salva o update da base
+    $resultado = pg_query_params($conn, $sql, [
+        $dados['nome'],
+        $dados['descricao'],
+        $dados['tabela_destino'],
+        $dados['fonte'],
+        $dados['fonte_link'],
+        $dados['fonte_api'],
+        $id_base
+    ]);
+
+    // verifica se deu certo
+    if(!$resultado){
+        pg_query($conn, "ROLLBACK");
+
+        echo json_encode([
+            "erro" => "Erro ao atualizar a base.",
+            "detalhes" => pg_last_error($conn)
+        ]);
+
+        return;
+    }
+
+    // commit
+    pg_query($conn, "COMMIT");
+
+    // feedback
+    echo json_encode([
+        "success" => true,
+        "mensagem" => "Base atualizada com sucesso."
     ]);
 }
 

@@ -13,10 +13,12 @@ function carregarBases() {
             const lista_bases = $("#lista-bases");
             // para cada base executa isso
             resposta.bases.forEach(function(base) {
-                // salva o item a estrutura a ser adicionada
+                // salva o item e a estrutura a ser adicionada
                 const linha = $(`
                     <tr>
-                        <td>${base.nome}</td>
+                        <td>
+                            <a href="formulario.html?id_base=${base.id_base}">${base.nome}<a>
+                        </td>
                     </tr>
                 `);
                 // adiciona na lista

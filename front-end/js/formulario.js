@@ -1,5 +1,38 @@
 console.log("Olá Agadê!");
 
+// pegar o id da base selecionada, cria variavel para receber as fontes e troca o botão
+const parametros = new URLSearchParams(window.location.search);
+const id_base = parametros.get("id_base");
+if (id_base) {
+    $("#submit").text("Atualizar base e fontes");
+}
+let fontes_base = [];
+
+// apenas caso estivermos editando uma base
+if (id_base) {
+    // envia requisição para php
+    $.post(
+        "../../back-end/php/script.php",
+        // dados a serem enviados
+        {
+            acao: "buscarDados",
+            id_base: id_base
+        },
+        // ao receber a resposta o js preenche os campos do formulário
+        function(resposta) {
+            $("#nome").val(resposta.base.nome);
+            $("#descricao").val(resposta.base.descricao);
+            $("#tabela_destino").val(resposta.base.tabela_destino);
+            $("#fonte").val(resposta.base.fonte);
+            $("#fonte_link").val(resposta.base.fonte_link);
+            $("#fonte_api").val(resposta.base.fonte_api);
+            // guarda os packages e os resources de cada fonte para usar depois
+            fontes_base = resposta.fontes;
+        },
+        "json"
+    );
+}
+
 // guarda partes do html úteis para o programa em variáveis
 const btn_listar = $("#bt-listar");
 const input_url = $("#input-url");
@@ -7,8 +40,9 @@ const lista_package_resource = $("#lista-package-resource");
 const busca_package = $(".busca-package");
 const input_busca_package = $("#input-busca-package");
 
-// array para salvar os packages carregados e variável para url
+// array para salvar os packages carregados, os packages que abrimos ao editar e variável para url
 let packages_carregados = [];
+let packages_abertos = [];
 let url = "";
 
 // chama a função que carrega os packages
@@ -142,6 +176,9 @@ function carregarResources(package_id, painel, url) {
             // guarda a resposta da requisição
             const pkg = resposta.result;
 
+            // adiciona o id do package que o usuário abriu (serve para verificar depois quando deletar)
+            packages_abertos.push(pkg.id);
+
             // remove a mensagem de carregando os resources
             painel.empty();
 
@@ -157,6 +194,12 @@ function carregarResources(package_id, painel, url) {
 
             // para cada resource:
             pkg.resources.forEach(function(resource) {
+                // verifica se os resources carregados já estão na base para poder marcar
+                const ja_selecionado = fontes_base.some(function(fonte) {
+                    return fonte.package_id === resource.package_id &&
+                        fonte.resource_id === resource.id;
+                });
+
                 // cria um item de lista para cada metadado carregado e mostra apenas a caixa seletora e o titulo do resource
                 lista.append(`
                     <li>
@@ -168,7 +211,8 @@ function carregarResources(package_id, painel, url) {
                             data-url="${resource.url}"
                             data-nome="${resource.name}"
                             data-ultima-atualizacao="${resource.last_modified}"
-                            data-delimitador=";">
+                            data-delimitador=";"
+                            ${ja_selecionado ? "checked" : ""}>
 
                         <span>
                             ${resource.name} (${resource.format})
@@ -266,7 +310,9 @@ $("#formulario").on("submit", function(event) {
         fonte: $("#fonte").val(),
         fonte_link: $("#fonte_link").val(),
         fonte_api: $("#fonte_api").val(),
-        resources: []
+        resources: [],
+        // coloca a lista de packages que o usuário abriu no dicionário que vai para o php
+        packages_abertos: packages_abertos
     };
 
     // para cada resource selecionado, pegar os dados necessários e adicionar na lista resources em "dados"
@@ -282,19 +328,30 @@ $("#formulario").on("submit", function(event) {
         });
     });
 
+    // define que a ação padrão é add nova base e troca caso seja atualizar
+    let acao = "criarBasesFontes";
+    if (id_base) {
+        acao = "atualizarBaseFontes";
+    };
+
     $.post(
         // envia para o php a ação que deve ser feita e os dados a serem utilizados
         "../../back-end/php/script.php",
         {
-            acao: "criarBasesFontes",
-            dados: JSON.stringify(dados)
+            acao: acao,
+            dados: JSON.stringify(dados),
+            id_base: id_base
         },
 
-        // mostra o resultado do criar bases e fontes
+        // mostra o resultado do criar bases e fontes ou atualizar bases e fontes
         function(resposta) {
             console.log(resposta);
             if (resposta.success) {
-                alert("Base e fontes criadas com sucesso!");
+                if (acao === "atualizarBaseFontes") {
+                    alert("Base e fontes atualizadas com sucesso!");
+                } else {
+                    alert("Base e fontes criadas com sucesso!");
+                }
             } else {
                 alert("Erro ao criar base e fontes.");
                 console.log(resposta.erro);
