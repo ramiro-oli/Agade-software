@@ -52,6 +52,7 @@ switch ($acao) {
 function listarBases($conn) {
 
     // salva a consulta para encontrar as bases
+    // trocar aqui quando for para agadê bases
     $sql = "
         SELECT
             id_base,
@@ -88,6 +89,7 @@ function buscarDados($conn) {
     extract($_POST);
 
     // guarda a consulta a ser realizada para buscar os dados da base
+    // trocar aqui quando for para agadê bases
     $sql = "
         SELECT
             id_base,
@@ -119,6 +121,7 @@ function buscarDados($conn) {
 
 
     // salva a consulta das fontes
+    // trocar aqui quando for para agadê bases
     $sql = "
         SELECT
             package_id,
@@ -250,6 +253,7 @@ function criarBasesFontes($conn) {
     pg_query($conn, "BEGIN");
 
     // cria o script de inserir a base e pegar o id_base gerado
+    // trocar aqui quando for para agadê bases
     $sql_base = "
         INSERT INTO agade_software.bases
         (
@@ -296,6 +300,7 @@ function criarBasesFontes($conn) {
     };
 
     // monta o script para inserir as fontes
+    // trocar aqui quando for para agadê bases
     $sql_fonte = "
         INSERT INTO agade_software.fontes
         (
@@ -373,6 +378,7 @@ function atualizarBaseFontes($conn) {
     $dados = json_decode($dados, true);
 
     // salva a consulta a ser feita
+    // trocar aqui quando for para agadê bases
     $sql = "
         SELECT
             package_id,
@@ -399,6 +405,7 @@ function atualizarBaseFontes($conn) {
     $fontes_atuais = pg_fetch_all($resultado_fontes);
 
     // salva o insert
+    // trocar aqui quando for para agadê bases
     $sql_fonte = "
         INSERT INTO agade_software.fontes
         (resource_id, url, nome, ultima_atualizacao, package_id, delimitador, id_base)
@@ -444,6 +451,7 @@ function atualizarBaseFontes($conn) {
     }
 
     // salva o delete
+    // trocar aqui quando for para agadê bases
     $sql_delete = "
         DELETE FROM agade_software.fontes
         WHERE id_base = $1
@@ -499,6 +507,7 @@ function atualizarBaseFontes($conn) {
     }
 
     // salva o update da base
+    // trocar aqui quando for para agadê bases
     $sql = "
         UPDATE agade_software.bases
         SET
